@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./assets/fontawesome/css/all.css">
+    <link rel="stylesheet" href="./assets/fontawesome/css/solid.css">
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body onload="getAccounts()">
+    <nav class="navbar navbar-expand-lg fixed-top navbar-dark bg-dark">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+                <button class="btn btn-sm btn-primary mr-2" onclick="modalAddAccount()"><i class="fa fa-plus"></i> Tambah</button>
+            </ul>
+            
+            <form class="form-inline my-2 my-lg-0">
+            <button class="btn btn-sm btn-outline-success my-2 my-sm-0" type="submit"><i class="fas fa-sign-out-alt"></i> Sign out</button>
+            </form>
+        </div>
+      </nav>
+      <div class="sidebar">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control form-control-sm" id="searchAccountName" placeholder="Search">
+            <div class="input-group-append">
+                <button class="btn btn-sm btn-secondary" onclick="searchAccount()"><i class="fa fa-search"></i></button>
+            </div>
+        </div>
+        <div class="list-group" id="account-list">
+
+        </div>
+      </div>
+      <div class="content-wrapper">
+        <div class="content-header">
+            <button class="btn btn-sm btn-secondary float-right mb-2" id="btn-save" onclick="submitRecord()"><i class="fa fa-save"></i></button>
+            <button class="btn btn-sm btn-secondary float-right mr-2 mb-2" id="btn-add-record" onclick="addRecord()"><i class="fa fa-plus"></i></button>
+        </div>
+        <div class="content">
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <input type="hidden" id="account-id">
+                    <thead id="thead-account-info" class="thead-light">
+
+                    </thead>
+                    <tbody id="account-info">
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+      </div>
+    <script src="./assets/jquery/jquery-1.9.0.min.js"></script>
+    <script src="./assets/js/bootstrap.min.js"></script>
+    <script>
+        const electron = require('electron')
+        const db = require('./config/database/dbconfig')
+        const {ipcRenderer} = electron
+        let accountId
+        getAccounts = (accountName) => {
+            let query
+            if(accountName) {
+                query = `select * from account where account_name like '%${accountName}%'`
+            } else {
+                query = `select * from account`
+            }
+            db.query(query, (err, rows) => {
+                if(err) throw err
+                let accountList = ''
+                rows.map( row => {
+                    accountList += `<a href="#" class="list-group-item list-group-item-action" onclick="getAccountInfo(${row.account_id })">
+                                        ${row.account_name}
+                                        <span class="float-right">
+                                            <button class="btn btn-sm btn-light" onclick="deleteAccount(${row.account_id})"><i class="fa fa-times"></i></button>
+                                        </span>
+                                    </a>`
+                })
+                $('#account-list').html(accountList)
+            })
+        }
+        getAccountInfo = (id) => {
+            db.query(`select * from account_info where account_id = ${id}`, (err, rows) => {
+                if(err) throw err
+                let accountInfo = ''
+                let theadAccountInfo = `<tr>
+                                            <th>Username</th>
+                                            <th>Password</th>
+                                            <th>Action</th>
+                                        </tr>`
+                $('#btn-add-record, #btn-save').css('display','none')
+                rows.map(row => {
+                    accountInfo += `<tr>
+                                        <td>${row.item}</td>
+                                        <td>${row.description}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger float-right mr-2" title="delete" onclick="deleteSingleRow(${row.id})"><i class="fa fa-trash"></i></button>
+                                            <button class="btn btn-sm btn-warning float-right mr-2" onclick="editSingleRow(${row.id},'${row.item}','${row.description}',${row.account_id})"><i class="fa fa-pen"></i></button>
+                                        </td>
+                                    </tr>
+                                    ` 
+                })
+                $('#account-info').html(accountInfo)
+                $('#thead-account-info').html(theadAccountInfo)
+                $('.list-group-item').removeClass('active')
+                $(`#account-${id}`).addClass('active')
+                $('#account-id').val(id)
+            })
+        }
+
+        const modalAddAccount = () => {
+            ipcRenderer.send('open-modal:add-account')
+        }
+
+        let row = 0
+        let array_id = []
+        const addRecord = () => {
+            row++
+            appendDetailForm(row)
+            array_id.push(row)
+        }
+
+        const appendDetailForm = (i) => {
+            let form = `<tr class="tr-record" data-id="${i}" id="tr-record-${i}">
+                            <td>
+                                <input type="text" class="form-control form-control-sm record" id="item-${i}" placeholder="john doe" autofocus>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm record" id="description-${i}" placeholder="mypassword">
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-light btn-delete" data-id="${i}"><i class="fa fa-trash"></i></button>
+                            </td>
+                        </tr>`
+            $('#account-info').append(form)
+        }
+
+        const loadDetailForm = () => {
+            $('#btn-add-record, #btn-save').css('display','inline')
+            let form = `<tr class="tr-record" data-id="0" id="tr-record-0">
+                            <td>
+                                <input type="text" class="form-control form-control-sm record" id="item-0" placeholder="john doe">
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm record" id="description-0" placeholder="mypassword">
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-light btn-delete" data-id="0"><i class="fa fa-trash"></i></button>
+                            </td>
+                        </tr>`
+            $('#account-info').html(form)
+        }
+
+        ipcRenderer.on('load:detail-form', (e, accountId, accountName) => {
+            getAccounts()
+            loadDetailForm()
+            $('#account-id').val(accountId)
+            $('#item-0').focus()
+            array_id.splice(0, array_id.length)
+            array_id.push(0)
+        })
+
+        $('#account-info').on('click', '.btn-delete', function() {
+            let id = $(this).attr('data-id')
+            $(`.tr-record[data-id="${id}"]`).remove()
+            let ind = array_id.indexOf(parseInt(id))
+            if(ind>-1){
+                array_id.splice(ind,1)
+            }
+        })
+
+        const submitRecord = () => {
+            let item = []
+            let description = []
+            let accountId = $('#account-id').val()
+            let input = []
+            let i
+            for(i=0;i<array_id.length;i++) {
+                item.push($(`#item-${array_id[i]}`).val())
+                description.push($(`#description-${array_id[i]}`).val())
+            }
+            if(item[0] == undefined || description[0] == undefined) {
+                return false
+            } else {
+                let queryInsert
+                let ind
+                for(ind=0;ind<array_id.length;ind++){
+                    input.push(`('${item[ind]}','${description[ind]}',${accountId})`)
+                }
+                let inputJoin = input.join(",")
+                queryInsert = `insert into account_info(item, description, account_id) values${inputJoin}`
+
+                db.query(queryInsert, err => {
+                    if (err) throw err
+                    getAccountInfo(accountId)
+                })
+            }
+        }
+
+        const deleteSingleRow = (id) => {
+            let query = `delete from account_info where id = ${id}`
+            db.query(query, err => {
+                if(err) throw err
+                let accountId = $('#account-id').val()
+                getAccountInfo(accountId)
+            })
+        }
+
+        const editSingleRow = (id, item, description, accountId) => {
+            ipcRenderer.send('open-modal:edit-account-info', id, item, description, accountId)
+        }
+
+        ipcRenderer.on('load:account-info', (e, id) => {
+            getAccountInfo(id)
+        })
+
+        const deleteAccount = (id) => {
+            ipcRenderer.send('delete:account', id)
+        }
+
+        ipcRenderer.on('success:delete-account', () => {
+            getAccounts()
+            $('#account-info').html("")
+            $('#thead-account-info').html("")
+        })
+
+        const searchAccount = () => {
+            let accountName = $('#searchAccountName').val()
+            getAccounts(accountName)
+        }
+
+        $('#searchAccountName').keyup( function() {
+            let accountName = $(this).val()
+            if(accountName === "") {
+                getAccounts()
+            }
+        })
+
+        $('#searchAccountName').keydown( (e) => {
+            if(e.keyCode == 13) {
+                searchAccount()
+            }
+        })
+
+    </script>
+</body>
+</html>

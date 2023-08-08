@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
+        <link rel="stylesheet" href="./assets/fontawesome/css/all.css">
+        <link rel="stylesheet" href="./assets/fontawesome/css/solid.css">
+        <link rel="stylesheet" href="./assets/css/style.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="row mt-3">
+                <div class="col-12">
+                    <label for="item">Username</label>
+                    <input type="text" id="item" class="form-control form-control-sm">
+                    <label for="description">Password</label>
+                    <input type="text" id="description" class="form-control form-control-sm mb-2">
+                    <button class="btn btn-sm btn-primary" onclick="submitEdit()"><i class="fa fa-paper-plane"></i> Submit</button>
+                    <button class="btn btn-sm btn-secondary" onclick="closeModal()"><i class="fa fa-times"></i> Tutup</button>
+                </div>
+            </div>
+        </div>
+        <script src="./assets/jquery/jquery-1.9.0.min.js"></script>
+        <script src="./assets/js/bootstrap.min.js"></script>
+        <script>
+            const {ipcRenderer} = require('electron')
+
+            let accountInfoId
+            let accountID
+
+            ipcRenderer.on('data', (e, id, item, description, accountId) => {
+                $('#item').val(item)
+                $('#description').val(description)
+                accountInfoId = id
+                accountID = accountId
+            })
+            const submitEdit = () => {
+                let newItem = $('#item').val()
+                let newDescription = $('#description').val()
+                ipcRenderer.send('submit:edit-account-info', accountInfoId, newItem, newDescription, accountID)
+            }
+            const closeModal = () => {
+                ipcRenderer.send('close-modal:edit-account-info')
+            }
+        </script>
+    </body>
+</html>

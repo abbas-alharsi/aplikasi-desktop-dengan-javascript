@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title></title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="./assets/css/bootstrap.min.css">
+        <link rel="stylesheet" href="./assets/fontawesome/css/all.css">
+        <link rel="stylesheet" href="./assets/fontawesome/css/solid.css">
+        <link rel="stylesheet" href="./assets/css/style.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="row mt-3">
+                <div class="col-12">
+                    <label for="account-name">Account name</label>
+                    <input type="text" id="account-name" class="form-control form-control-sm" placeholder="example: Facebook, Twitter, Linkedin">
+                    <label for="account-url">Account URL</label>
+                    <input type="text" id="account-url" class="form-control form-control-sm mb-2" placeholder="example: http://facebook.com">
+                    <button class="btn btn-sm btn-primary" onclick="submitAccount()"><i class="fa fa-paper-plane"></i> Submit</button>
+                    <button class="btn btn-sm btn-secondary" onclick="closeModal()"><i class="fa fa-times"></i> Tutup</button>
+                </div>
+            </div>
+        </div>
+        <script src="./assets/jquery/jquery-1.9.0.min.js"></script>
+        <script src="./assets/js/bootstrap.min.js"></script>
+        <script>
+            const {ipcRenderer} = require('electron')
+            const submitAccount = () => {
+                let accountName = $('#account-name').val()
+                let accountUrl = $('#account-url').val()
+                ipcRenderer.send('add-account', accountName, accountUrl)
+            }
+            const closeModal = () => {
+                ipcRenderer.send('close-modal:add-account')
+            }
+        </script>
+    </body>
+</html>
