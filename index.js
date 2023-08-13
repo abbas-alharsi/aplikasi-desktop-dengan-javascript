@@ -5,6 +5,7 @@ const db = require('./config/database/dbconfig')
 let mainWindow
 let modalAddAccount
 let modalEditAccount
+let modalLoginAccount
 mainWin = () => {
     mainWindow = new BrowserWindow(
         {
@@ -18,6 +19,25 @@ mainWin = () => {
         }
     )
     mainWindow.loadFile('index.html')
+}
+
+const modalLogin = () => {
+    modalLoginAccount = new BrowserWindow(
+        {
+            webPreferences: {
+                nodeIntegration: true
+            },
+            frame: false,
+            resizable: false,
+            closable: false,
+            modal: true,
+            parent: mainWindow,
+            width: 250,
+            height: 150,
+            autoHideMenuBar: true
+        }
+    )
+    modalLoginAccount.loadFile('login.html')
 }
 
 const addAccountModal = () => {
@@ -61,9 +81,28 @@ const editAccountModal = (id, item, description, accountId) => {
 
 app.on('ready', () => {
     mainWin()
+    modalLogin()
     db.connect()
 })
 
+ipcMain.on('login', (e, username, password) => {
+    let query = `select *, count(*) as count from users where username = '${username}' and password = '${password}'`
+    db.query(query, (err, result) => {
+        if(err) throw err
+        let rowCount = result[0].count
+        let userId = result[0].id
+        if(rowCount == 0) {
+            dialog.showErrorBox('Invalid Data','Username or password is incorrect')
+        } else {
+            modalLoginAccount.closable = true
+            modalLoginAccount.close()
+            mainWindow.webContents.send('app:active', username, userId)
+        }
+    })
+})
+ipcMain.on('app:logout', () => {
+    modalLogin()
+})
 ipcMain.on('open-modal:add-account', () => {
     addAccountModal()
 })

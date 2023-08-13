@@ -22,3 +22,16 @@
 #btn-add-record, #btn-save {
     display: none;
 }
+
+.overlay{
+    border-top: 1px solid #D0D3D4;
+    background-color: #adacac;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    z-index: 1000;
+    transition: all 0.4s ease-in-out;
+}
+.overlay.out{
+    width: 0%;
+}
